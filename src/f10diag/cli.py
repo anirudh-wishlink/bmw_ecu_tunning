@@ -676,8 +676,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.print_help()
         return EXIT_USAGE
 
-    configure_logging(_log_level(args.verbose))
-
     try:
         config = AppConfig.load(args.config).with_overrides(
             interface=args.interface,
@@ -689,6 +687,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     except ConfigError as exc:
         error_console.print(f"[red]Configuration error:[/red] {escape(str(exc))}")
         return EXIT_USAGE
+
+    # -v overrides the configured level; without it, config.toml decides.
+    configure_logging(_log_level(args.verbose) if args.verbose else config.logging.level)
 
     if not config.safety.read_only:
         error_console.print(
