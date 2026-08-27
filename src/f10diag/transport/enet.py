@@ -330,7 +330,13 @@ class ENETTransport(Transport):
                     f"Received {len(buffer)} of {size} bytes before the "
                     f"{effective:g}s deadline"
                 )
-            buffer += self.receive(size - len(buffer), timeout=remaining)
+            try:
+                buffer += self.receive(size - len(buffer), timeout=remaining)
+            except TransportTimeoutError as exc:
+                raise TransportTimeoutError(
+                    f"Received {len(buffer)} of {size} bytes before the "
+                    f"{effective:g}s deadline"
+                ) from exc
         return bytes(buffer)
 
     # -- metadata ---------------------------------------------------------

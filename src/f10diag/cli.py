@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from rich.console import Console
+from rich.markup import escape
 from rich.panel import Panel
 from rich.table import Table
 
@@ -121,8 +122,12 @@ def _render_candidates(candidates: list[Any]) -> None:
 
 
 def _not_verified(message: str, *, todo: Sequence[str] = ()) -> int:
-    """Print a "not implemented because unverified" explanation."""
-    body = [message]
+    """Print a "not implemented because unverified" explanation.
+
+    Messages often contain TOML section names such as ``[enet]``, so the text is
+    escaped rather than interpreted as rich markup.
+    """
+    body = [escape(message)]
     if todo:
         body.append("")
         body.append("Still to be established:")
@@ -245,7 +250,7 @@ def cmd_connect(args: argparse.Namespace, config: AppConfig) -> int:
     try:
         config.enet.validate_for_connection()
     except F10DiagError as exc:
-        error_console.print(Panel(str(exc), title="Cannot connect", border_style="red"))
+        error_console.print(Panel(escape(str(exc)), title="Cannot connect", border_style="red"))
         return EXIT_NOT_VERIFIED
 
     transport = ENETTransport(config.enet)
@@ -265,7 +270,7 @@ def cmd_connect(args: argparse.Namespace, config: AppConfig) -> int:
         try:
             transport.connect()
         except F10DiagError as exc:
-            error_console.print(Panel(str(exc), title="Connection failed", border_style="red"))
+            error_console.print(Panel(escape(str(exc)), title="Connection failed", border_style="red"))
             capture.record_event("connect_failed", error=str(exc))
             return EXIT_ERROR
 
@@ -318,7 +323,7 @@ def _passive_listen(transport: ENETTransport, duration: float, *, raw: bool) -> 
         except TransportTimeoutError:
             continue
         except F10DiagError as exc:
-            error_console.print(f"[yellow]Link closed while listening: {exc}[/yellow]")
+            error_console.print(f"[yellow]Link closed while listening: {escape(str(exc))}[/yellow]")
             break
         total += len(chunk)
         if raw:
@@ -428,7 +433,7 @@ def cmd_capture(args: argparse.Namespace, config: AppConfig) -> int:
         try:
             output = export_capture(args.export, args.output or "capture.json", args.format)
         except (ValueError, F10DiagError) as exc:
-            error_console.print(f"[red]{exc}[/red]")
+            error_console.print(f"[red]{escape(str(exc))}[/red]")
             return EXIT_ERROR
         console.print(f"Exported to {output}")
         return EXIT_OK
@@ -438,7 +443,7 @@ def cmd_capture(args: argparse.Namespace, config: AppConfig) -> int:
     except F10DiagError as exc:
         error_console.print(
             Panel(
-                f"{exc}\n\n"
+                f"{escape(str(exc))}\n\n"
                 "To record the traffic of another diagnostic tool on the wire "
                 "instead, capture at the link layer with tcpdump on the ENET "
                 "interface. That is outside this tool and requires "
@@ -464,7 +469,7 @@ def cmd_capture(args: argparse.Namespace, config: AppConfig) -> int:
         try:
             transport.connect()
         except F10DiagError as exc:
-            error_console.print(f"[red]{exc}[/red]")
+            error_console.print(f"[red]{escape(str(exc))}[/red]")
             return EXIT_ERROR
         capture.update_comms_level(transport.comms_level.name)
         console.print(
@@ -542,7 +547,7 @@ def cmd_demo(args: argparse.Namespace, config: AppConfig) -> int:
     try:
         F10Vehicle(config=config.vehicle).discover_ecus()
     except NotVerifiedError as exc:
-        console.print(f"   [yellow]Refused, as designed:[/yellow] {exc}")
+        console.print(f"   [yellow]Refused, as designed:[/yellow] {escape(str(exc))}")
 
     console.print(
         f"\n[bold]Highest level reachable today:[/bold] "
@@ -556,69 +561,93 @@ def cmd_demo(args: argparse.Namespace, config: AppConfig) -> int:
 # --------------------------------------------------------------------------
 
 
+def _add_global_flags(parser: argparse.ArgumentParser, *, top_level: bool) -> None:
+    """Add the flags that every command accepts.
+
+    They are attached both to the top-level parser and to each leaf command, so
+    that ``f10diag --raw dme live`` and ``f10diag dme live --raw`` behave the
+    same. Leaf copies default to ``SUPPRESS`` so that an omitted flag does not
+    overwrite the value already parsed at the top level.
+    """
+    default: Any = None if top_level else argparse.SUPPRESS
+
+    parser.add_argument("-v", "--verbose", action="count",
+                        default=0 if top_level else argparse.SUPPRESS,
+                        help="increase log verbosity (repeatable)")
+    parser.add_argument("--raw", action="store_true",
+                        default=False if top_level else argparse.SUPPRESS,
+                        help="show raw bytes and low-level detail")
+    parser.add_argument("--json", action="store_true",
+                        default=False if top_level else argparse.SUPPRESS,
+                        help="emit machine-readable JSON where supported")
+    parser.add_argument("--config", type=Path, default=default,
+                        help="path to config.toml")
+    parser.add_argument("--interface", default=default,
+                        help="network interface, e.g. en7")
+    parser.add_argument("--host", default=default,
+                        help="diagnostic gateway address")
+    parser.add_argument("--port", type=int, default=default,
+                        help="diagnostic gateway TCP port")
+    parser.add_argument("--timeout", type=float, default=default,
+                        help="receive timeout in seconds")
+
+    safety = parser.add_mutually_exclusive_group()
+    safety.add_argument("--read-only", dest="read_only", action="store_true",
+                        default=default, help="read-only mode (the default)")
+    safety.add_argument("--allow-write", dest="read_only", action="store_false",
+                        default=default,
+                        help="lift the read-only gate (no write operation exists yet)")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="f10diag",
         description="Read-only BMW F10 ENET diagnostic tool for macOS",
     )
     parser.add_argument("--version", action="version", version=f"f10diag {__version__}")
-    parser.add_argument("-v", "--verbose", action="count", default=0,
-                        help="increase log verbosity (repeatable)")
-    parser.add_argument("--raw", action="store_true",
-                        help="show raw bytes and low-level detail")
-    parser.add_argument("--json", action="store_true",
-                        help="emit machine-readable JSON where supported")
-    parser.add_argument("--config", type=Path, default=None,
-                        help="path to config.toml")
-    parser.add_argument("--interface", default=None, help="network interface, e.g. en7")
-    parser.add_argument("--host", default=None, help="diagnostic gateway address")
-    parser.add_argument("--port", type=int, default=None, help="diagnostic gateway TCP port")
-    parser.add_argument("--timeout", type=float, default=None,
-                        help="receive timeout in seconds")
-
-    safety = parser.add_mutually_exclusive_group()
-    safety.add_argument("--read-only", dest="read_only", action="store_true",
-                        default=None, help="read-only mode (the default)")
-    safety.add_argument("--allow-write", dest="read_only", action="store_false",
-                        help="lift the read-only gate (no write operation exists yet)")
+    _add_global_flags(parser, top_level=True)
 
     sub = parser.add_subparsers(dest="command", metavar="<command>")
 
+    def leaf(group: Any, name: str, help_text: str) -> argparse.ArgumentParser:
+        command = group.add_parser(name, help=help_text)
+        _add_global_flags(command, top_level=False)
+        return command
+
     network = sub.add_parser("network", help="inspect host networking")
     network_sub = network.add_subparsers(dest="subcommand", metavar="<subcommand>")
-    interfaces = network_sub.add_parser("interfaces", help="list network interfaces")
+    interfaces = leaf(network_sub, "interfaces", "list network interfaces")
     interfaces.add_argument("--all", action="store_true",
                             help="include loopback and virtual interfaces")
     interfaces.set_defaults(func=cmd_network_interfaces)
-    select = network_sub.add_parser("select", help="choose an ENET interface")
-    select.set_defaults(func=cmd_network_select)
+    leaf(network_sub, "select", "choose an ENET interface").set_defaults(
+        func=cmd_network_select
+    )
 
-    connect = sub.add_parser("connect", help="open a TCP connection and report the level reached")
+    connect = leaf(sub, "connect", "open a TCP connection and report the level reached")
     connect.add_argument("--listen", type=float, default=0.0, metavar="SECONDS",
                          help="after connecting, listen passively without transmitting")
     connect.set_defaults(func=cmd_connect)
 
     vehicle = sub.add_parser("vehicle", help="vehicle information")
     vehicle_sub = vehicle.add_subparsers(dest="subcommand", metavar="<subcommand>")
-    vehicle_info = vehicle_sub.add_parser("info", help="show configured vehicle")
-    vehicle_info.set_defaults(func=cmd_vehicle_info)
+    leaf(vehicle_sub, "info", "show configured vehicle").set_defaults(
+        func=cmd_vehicle_info
+    )
 
     ecu = sub.add_parser("ecu", help="control units")
     ecu_sub = ecu.add_subparsers(dest="subcommand", metavar="<subcommand>")
-    ecu_list = ecu_sub.add_parser("list", help="list discovered control units")
-    ecu_list.set_defaults(func=cmd_ecu_list)
-    ecu_identify = ecu_sub.add_parser("identify", help="identify one control unit")
+    leaf(ecu_sub, "list", "list discovered control units").set_defaults(func=cmd_ecu_list)
+    ecu_identify = leaf(ecu_sub, "identify", "identify one control unit")
     ecu_identify.add_argument("ecu", help="short name, e.g. DME")
     ecu_identify.set_defaults(func=cmd_ecu_identify)
 
     dme = sub.add_parser("dme", help="engine control unit")
     dme_sub = dme.add_subparsers(dest="subcommand", metavar="<subcommand>")
-    dme_dtc = dme_sub.add_parser("dtc", help="read fault codes")
-    dme_dtc.set_defaults(func=cmd_dme_dtc)
-    dme_live = dme_sub.add_parser("live", help="read live data")
-    dme_live.set_defaults(func=cmd_dme_live)
+    leaf(dme_sub, "dtc", "read fault codes").set_defaults(func=cmd_dme_dtc)
+    leaf(dme_sub, "live", "read live data").set_defaults(func=cmd_dme_live)
 
-    capture = sub.add_parser("capture", help="record traffic, transmitting nothing")
+    capture = leaf(sub, "capture", "record traffic, transmitting nothing")
     capture.add_argument("--duration", type=float, default=10.0, help="seconds to record")
     capture.add_argument("--output", type=Path, default=None, help="capture file path")
     capture.add_argument("--export", type=Path, default=None,
@@ -627,8 +656,9 @@ def build_parser() -> argparse.ArgumentParser:
                          help="export format")
     capture.set_defaults(func=cmd_capture)
 
-    demo = sub.add_parser("demo", help="offline demonstration, no vehicle required")
-    demo.set_defaults(func=cmd_demo)
+    leaf(sub, "demo", "offline demonstration, no vehicle required").set_defaults(
+        func=cmd_demo
+    )
 
     return parser
 
@@ -657,7 +687,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             read_only=args.read_only,
         )
     except ConfigError as exc:
-        error_console.print(f"[red]Configuration error:[/red] {exc}")
+        error_console.print(f"[red]Configuration error:[/red] {escape(str(exc))}")
         return EXIT_USAGE
 
     if not config.safety.read_only:
@@ -672,7 +702,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     except NotVerifiedError as exc:
         return _not_verified(str(exc))
     except F10DiagError as exc:
-        error_console.print(f"[red]{type(exc).__name__}:[/red] {exc}")
+        error_console.print(f"[red]{type(exc).__name__}:[/red] {escape(str(exc))}")
         return EXIT_ERROR
     except KeyboardInterrupt:
         error_console.print("\nInterrupted.")

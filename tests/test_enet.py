@@ -209,11 +209,24 @@ class TestENETConfigValidation:
 
 
 class EchoServer:
-    """A minimal TCP server on the loopback interface."""
+    """A minimal TCP server on the loopback interface.
 
-    def __init__(self, *, echo: bool = True, drop_immediately: bool = False) -> None:
+    Args:
+        echo: Send received bytes back.
+        drop_immediately: Close each connection as soon as it is accepted.
+        greeting: Bytes to send once, right after accepting.
+    """
+
+    def __init__(
+        self,
+        *,
+        echo: bool = True,
+        drop_immediately: bool = False,
+        greeting: bytes | None = None,
+    ) -> None:
         self._echo = echo
         self._drop = drop_immediately
+        self._greeting = greeting
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._socket.bind(("127.0.0.1", 0))
@@ -234,6 +247,8 @@ class EchoServer:
                 if self._drop:
                     continue
                 connection.settimeout(0.5)
+                if self._greeting:
+                    connection.sendall(self._greeting)
                 while not self._stop.is_set():
                     try:
                         data = connection.recv(4096)
@@ -356,11 +371,12 @@ class TestENETTransportIO:
         finally:
             server.close()
 
-    def test_receive_exactly_times_out_on_short_payload(self, loopback):
-        server = EchoServer(echo=False)
+    def test_receive_exactly_reports_how_much_arrived(self, loopback):
+        # A truncated payload must say what was received, not just "timeout".
+        server = EchoServer(echo=False, greeting=b"\x01\x02")
         try:
-            with ENETTransport(_config(server, loopback, receive_timeout=0.2)) as t:
-                with pytest.raises(TransportTimeoutError, match="of 4 bytes"):
+            with ENETTransport(_config(server, loopback, receive_timeout=0.3)) as t:
+                with pytest.raises(TransportTimeoutError, match="Received 2 of 4 bytes"):
                     t.receive_exactly(4)
         finally:
             server.close()
