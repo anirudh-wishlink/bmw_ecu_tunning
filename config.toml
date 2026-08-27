@@ -1,0 +1,42 @@
+# f10diag configuration
+#
+# Values marked "auto" are resolved at runtime from the host machine.
+# Values left empty ("") are UNVERIFIED and must be supplied explicitly by the
+# operator before a connection attempt is allowed. The application deliberately
+# ships without a default BMW gateway address or port: see docs/protocol.md.
+
+[enet]
+# macOS interface name (e.g. "en7"), or "auto" to pick the most likely
+# Ethernet-class interface. "auto" only selects an interface, it never
+# reconfigures macOS networking.
+interface = "auto"
+
+# TCP host of the vehicle diagnostic gateway.
+# UNVERIFIED - no default is provided. Set this once you have determined it.
+host = ""
+
+# TCP port of the vehicle diagnostic gateway.
+# UNVERIFIED - no default is provided. Set this once you have determined it.
+port = ""
+
+connect_timeout = 5.0
+receive_timeout = 2.0
+reconnect_attempts = 0
+reconnect_delay = 1.0
+
+[vehicle]
+platform = "F10"
+model = "523i"
+model_year = 2011
+engine = "N52B25"
+dme = "MSV90"          # believed, not confirmed by an ECU read yet
+
+[safety]
+# Read-only is the default and the only currently supported mode.
+read_only = true
+
+[logging]
+level = "INFO"
+capture_dir = "captures"
+# Write every TX/RX frame to a capture file.
+log_packets = true

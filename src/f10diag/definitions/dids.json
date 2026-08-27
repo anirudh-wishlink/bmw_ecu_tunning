@@ -1,0 +1,28 @@
+{
+  "_comment": [
+    "Data identifiers (DIDs) readable from F10 ECUs.",
+    "",
+    "This file is intentionally EMPTY. No DID for this vehicle has been",
+    "verified yet. Do not populate it from memory, from forum posts, or from",
+    "another platform's definitions without recording the source and testing",
+    "the DID against the actual car.",
+    "",
+    "Only read-only identifiers belong here. Anything writable must not be",
+    "added until a write safety gate exists and has been reviewed."
+  ],
+  "_schema": {
+    "identifier": "DID as a hex string, e.g. \"F190\" (required)",
+    "name": "machine-readable name (required)",
+    "length": "expected response payload length in bytes (required)",
+    "decoder": "decoder name from f10diag.decoding.values.DECODERS (required)",
+    "scale": "multiplier applied to numeric results",
+    "offset": "constant added after scaling",
+    "unit": "physical unit for display",
+    "description": "human description",
+    "source": "where this definition came from; required for verified entries",
+    "verified": "true only when confirmed against the vehicle",
+    "ecu": "ECU the identifier applies to, e.g. DME",
+    "access": "must be \"read\" for every entry in the read-only phase"
+  },
+  "definitions": []
+}

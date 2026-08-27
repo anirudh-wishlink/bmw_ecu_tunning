@@ -1,0 +1,91 @@
+{
+  "_comment": [
+    "ECU catalogue for the F10 platform.",
+    "",
+    "This file is intentionally EMPTY of addresses. BMW diagnostic addresses",
+    "for the F10 have not been verified in this project, and inventing them",
+    "would risk addressing the wrong control unit.",
+    "",
+    "'f10diag ecu list' will only ever display ECUs that actually answered a",
+    "request. It must never print this file's contents as if they were",
+    "discovered hardware.",
+    "",
+    "The short names below are BMW's well-known abbreviations for control units",
+    "and are recorded purely as expected labels. They carry no address, and",
+    "their presence in this file is not a claim that the vehicle has them."
+  ],
+  "_schema": {
+    "short_name": "BMW abbreviation, e.g. \"DME\" (required)",
+    "long_name": "descriptive name",
+    "address": "diagnostic address as a hex string, or null when unverified",
+    "platform": "vehicle platform the entry applies to, e.g. \"F10\"",
+    "source": "where the address came from; required when address is set",
+    "verified": "true only when the address has been confirmed on a vehicle"
+  },
+  "ecus": [
+    {
+      "short_name": "DME",
+      "long_name": "Digital Motor Electronics (engine control unit)",
+      "address": null,
+      "platform": "F10",
+      "source": null,
+      "verified": false
+    },
+    {
+      "short_name": "DSC",
+      "long_name": "Dynamic Stability Control",
+      "address": null,
+      "platform": "F10",
+      "source": null,
+      "verified": false
+    },
+    {
+      "short_name": "EGS",
+      "long_name": "Electronic transmission control",
+      "address": null,
+      "platform": "F10",
+      "source": null,
+      "verified": false
+    },
+    {
+      "short_name": "FRM",
+      "long_name": "Footwell module",
+      "address": null,
+      "platform": "F10",
+      "source": null,
+      "verified": false
+    },
+    {
+      "short_name": "JBE",
+      "long_name": "Junction box electronics",
+      "address": null,
+      "platform": "F10",
+      "source": null,
+      "verified": false
+    },
+    {
+      "short_name": "KOMBI",
+      "long_name": "Instrument cluster",
+      "address": null,
+      "platform": "F10",
+      "source": null,
+      "verified": false
+    },
+    {
+      "short_name": "CAS",
+      "long_name": "Car Access System",
+      "address": null,
+      "platform": "F10",
+      "source": null,
+      "verified": false
+    },
+    {
+      "short_name": "ZGM",
+      "long_name": "Central gateway module",
+      "address": null,
+      "platform": "F10",
+      "source": null,
+      "verified": false
+    }
+  ]
+}

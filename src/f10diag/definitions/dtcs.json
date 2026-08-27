@@ -1,0 +1,21 @@
+{
+  "_comment": [
+    "Diagnostic trouble code descriptions.",
+    "",
+    "This file is intentionally EMPTY. BMW-specific DTC descriptions for the",
+    "F10 have not been sourced, and a wrong description is worse than none:",
+    "it sends someone to replace the wrong part.",
+    "",
+    "When a code is not present here, the tool prints",
+    "'Description: Unknown BMW DTC' and shows the raw bytes. It must never",
+    "guess a description from a similar-looking code."
+  ],
+  "_schema": {
+    "code": "DTC as reported by the ECU, hex string (required)",
+    "description": "text description (required)",
+    "ecu": "ECU the code belongs to",
+    "source": "where the description came from (required)",
+    "verified": "true only when confirmed"
+  },
+  "dtcs": []
+}

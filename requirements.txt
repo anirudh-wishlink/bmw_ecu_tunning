@@ -1,0 +1,11 @@
+# Runtime
+rich>=13.7
+
+# Development / test
+pytest>=8.0
+
+# Deliberately NOT included yet. Add only when the transport that needs them
+# has been verified against real hardware:
+#   python-can      - only if a CAN transport is ever required
+#   udsoncan        - only if the generic UDS layer is delegated to it
+#   can-isotp       - only if ISO-TP over SocketCAN is ever required

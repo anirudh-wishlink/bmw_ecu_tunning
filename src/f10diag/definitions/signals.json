@@ -1,0 +1,63 @@
+{
+  "_comment": [
+    "Live-data signal definitions for the F10 / MSV90.",
+    "",
+    "This file is intentionally EMPTY. No signal identifier, byte offset, or",
+    "scaling formula for this vehicle has been verified yet, and the project",
+    "rules forbid inventing them.",
+    "",
+    "Add an entry only when its identifier AND its decoding have been confirmed",
+    "against the real vehicle or an authoritative source, and record how in the",
+    "'source' field. An entry may be added with \"verified\": false while it is",
+    "still a hypothesis; the tool will then refuse to apply it unless the",
+    "operator explicitly opts in, and will label every value [UNVERIFIED]."
+  ],
+  "_schema": {
+    "name": "machine-readable signal name (required)",
+    "identifier": "data identifier as a hex string, or null if unknown",
+    "length": "number of bytes consumed (required)",
+    "offset_bytes": "byte offset of the value inside the response payload",
+    "decoder": "one of the decoders in f10diag.decoding.values.DECODERS (required)",
+    "scale": "multiplier applied to numeric results",
+    "offset": "constant added after scaling",
+    "unit": "physical unit for display",
+    "description": "human description",
+    "source": "where this definition came from; required for verified entries",
+    "verified": "true only when confirmed; defaults to false",
+    "ecu": "ECU the definition applies to, e.g. DME"
+  },
+  "_example_only_not_real": {
+    "name": "example_temperature",
+    "identifier": "UNKNOWN",
+    "length": 2,
+    "offset_bytes": 0,
+    "decoder": "uint16",
+    "scale": 0.1,
+    "offset": -40.0,
+    "unit": "degC",
+    "description": "Illustrates the schema. Not a real F10 signal.",
+    "source": "none - schema example",
+    "verified": false,
+    "ecu": "DME"
+  },
+  "_planned_signals": [
+    "Names only, with no identifiers or formulas, recording what we intend to",
+    "support once verified:",
+    "engine_speed",
+    "coolant_temperature",
+    "intake_air_temperature",
+    "engine_load",
+    "throttle_position",
+    "accelerator_pedal_position",
+    "air_mass",
+    "lambda",
+    "fuel_trim_short_term",
+    "fuel_trim_long_term",
+    "ignition_timing",
+    "vanos_position_intake",
+    "vanos_position_exhaust",
+    "battery_voltage",
+    "misfire_counters"
+  ],
+  "signals": []
+}
